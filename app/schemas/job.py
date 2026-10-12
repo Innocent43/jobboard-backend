@@ -11,12 +11,18 @@ class JobBase(BaseModel):
 class JobCreate(JobBase):
     pass
 
+
 class JobRead(JobBase):
     id: int
     is_open: bool
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class JobWithStats(JobRead):
+    applicant_count: int
+
 
 
 class JobUpdate(BaseModel):

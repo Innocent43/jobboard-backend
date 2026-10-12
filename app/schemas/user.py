@@ -20,3 +20,11 @@ class UserRead(UserBase):
 class UserUpdate(BaseModel):
     name: str | None = None
     email: EmailStr | None = None
+
+
+class UserSummary(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+
+    model_config=ConfigDict(from_attributes=True)

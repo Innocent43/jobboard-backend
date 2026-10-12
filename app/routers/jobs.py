@@ -3,10 +3,12 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.ext.asyncio import AsyncSession 
 
 from app.database.session import get_db
-from app.schemas.job import JobCreate,JobUpdate,JobRead
-from app.services import job_service
+from app.schemas.job import JobCreate,JobUpdate,JobRead,JobWithStats
+from app.services import job_service,application_service
 from app.dependencies.auth import get_current_user,require_role
 from app.models.user import User,UserRole
+from app.schemas.application import ApplicationRead
+
 
 router: APIRouter = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -15,9 +17,17 @@ async def create_job(job_data: JobCreate, current_user: User = Depends(require_r
     return await job_service.create_job(db,job_data,current_user.id)
 
 
-@router.get("/mine",response_model=list[JobRead])
-async def get_my_jobs(current_user: User = Depends(get_current_user),db: AsyncSession = Depends(get_db),)-> list[JobRead]:
-    return await job_service.get_jobs_by_owner(db,current_user.id)
+# @router.get("/mine",response_model=list[JobRead])
+# async def get_my_jobs(current_user: User = Depends(get_current_user),db: AsyncSession = Depends(get_db),)-> list[JobRead]:
+#     return await job_service.get_jobs_by_owner(db,current_user.id)
+
+@router.get("/mine", response_model=list[JobWithStats])
+async def get_my_jobs(current_user: User = Depends(require_role(UserRole.EMPLOYER)),db: AsyncSession = Depends(get_db)) -> list[JobWithStats]:
+    rows = await job_service.get_jobs_by_owner_with_counts(db,current_user.id)
+
+    return [
+        JobWithStats(**JobRead.model_validate(job).model_dump(),applicant_count=count) for job, count in rows
+    ]
 
 
 @router.get("/{job_id}",response_model=JobRead)
@@ -66,3 +76,14 @@ async def delete_job(job_id: int,current_user: User = Depends(get_current_user),
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Not Your Job Listing")
     
     await job_service.delete_job(db,job)
+
+
+
+@router.get("/{job_id}/applications", response_model=list[ApplicationRead])
+async def get_job_applications(job_id: int,current_user: User = Depends(get_current_user),db: AsyncSession =Depends(get_db)) -> list[ApplicationRead]:
+    job = await job_service.get_job_by_id(db,job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Job not found")
+    if job.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your job posting")
+    return await application_service.get_applications_for_job(db,job_id)

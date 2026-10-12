@@ -1,9 +1,10 @@
 
 # from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select,func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.job import Job
 from app.schemas.job import JobCreate
+from app.models.application import Application
 
 async def create_job(db: AsyncSession,job_data: JobCreate,owner_id: int)-> Job:
     new_job = Job(
@@ -42,6 +43,13 @@ async def delete_job(db: AsyncSession,job:Job)-> None:
     await db.commit()
 
 
-async def get_jobs_by_owner(db: AsyncSession,owner_id: int)->list[Job]:
-    result = await db.execute(select(Job).filter(Job.owner_id == owner_id))
-    return list(result.scalars().all())
+# async def get_jobs_by_owner(db: AsyncSession,owner_id: int)->list[Job]:
+#     result = await db.execute(select(Job).filter(Job.owner_id == owner_id))
+#     return list(result.scalars().all())
+
+
+async def get_jobs_by_owner_with_counts(db: AsyncSession, owner_id: int)->list[tuple[Job, int]]:
+    stmt = (select(Job, func.count(Application.id).label("applicant_count")).outerjoin(Application, Application.job_id == Job.id).where(Job.owner_id == owner_id).group_by(Job.id).order_by(Job.created_at.desc()))
+
+    result = await db.execute(stmt)
+    return [(job, count) for job, count in result.all()]

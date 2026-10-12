@@ -17,6 +17,7 @@ class Application(Base):
 
     job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id",ondelete="CASCADE"))
 
-    applicant: Mapped["User"] = relationship(back_populates="applications")
+    applicant: Mapped["User"] = relationship(back_populates="applications", lazy="selectin")
 
-    job: Mapped["Job"] = relationship(back_populates="applications")
+    job: Mapped["Job"] = relationship(back_populates="applications",lazy="selectin")
+    

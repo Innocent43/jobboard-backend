@@ -14,16 +14,16 @@ async def create_application(db: AsyncSession,app_data:ApplicationCreate, user_i
     new_application = Application(user_id=user_id,job_id=app_data.job_id)
     db.add(new_application)
     await db.commit()
-    await db.refresh(new_application)
+    await db.refresh(new_application,attribute_names=["job"])
     return new_application
 
 async def get_application_by_id(db: AsyncSession, application_id: int) -> Application | None:
     result = await db.execute(select(Application).filter(Application.id == application_id))
     return result.scalar_one_or_none()
 
-async def get_applications(db: AsyncSession) -> list[Application]:
-    result = await db.execute(select(Application))
-    return list(result.scalars().all())
+# async def get_applications(db: AsyncSession) -> list[Application]:
+#     result = await db.execute(select(Application))
+#     return list(result.scalars().all())
 
 
 async def update_application_status(db: AsyncSession, application: Application, status: str)-> Application:
@@ -40,6 +40,11 @@ async def delete_application(db: AsyncSession, application: Application)-> None:
 async def get_applications_by_user(db: AsyncSession, user_id: int)-> list[Application]:
     result = await db.execute(select(Application).options(selectinload(Application.job)).filter(Application.user_id == user_id))
     
+    return list(result.scalars().all())
+
+async def get_applications_for_job(db: AsyncSession, job_id)-> list[Application]:
+    result = await db.execute(select(Application).where(Application.job_id == job_id).order_by(Application.created_at.desc()))
+
     return list(result.scalars().all())
 
 

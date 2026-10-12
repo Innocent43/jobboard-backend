@@ -8,7 +8,7 @@ from app.services import application_service
 from app.dependencies.auth import get_current_user,require_role
 from app.models.user import User,UserRole
 
-router = APIRouter(prefix="/applications",tags=["applications"])
+router = APIRouter(prefix="/applications",tags=["Applications"])
 
 @router.post("/",response_model=ApplicationRead,status_code=status.HTTP_201_CREATED)
 async def apply_to_job(app_data: ApplicationCreate,current_user: User = Depends(require_role(UserRole.JOB_SEEKER)), db: AsyncSession = Depends(get_db))-> ApplicationRead:
@@ -23,27 +23,39 @@ async def get_my_applications(current_user: User = Depends(get_current_user),db:
     return await application_service.get_applications_by_user(db,current_user.id)
 
 @router.get("/{application_id}",response_model=ApplicationRead)
-async def get_application(application_id: int, db: AsyncSession=Depends(get_db)) ->ApplicationRead:
+async def get_application(application_id: int,current_user: User = Depends(get_current_user), db: AsyncSession=Depends(get_db)) ->ApplicationRead:
     application = await application_service.get_application_by_id(db,application_id)
+
     if application is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Application not found")
+
+    is_applicant = application.user_id == current_user.id
+    is_job_owner = application.job.owner_id == current_user.id
+    if not (is_applicant or is_job_owner):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to view this application")
 
     return application
 
-@router.get("/", response_model=list[ApplicationRead])
-async def list_applications(db: AsyncSession = Depends(get_db)) -> list[ApplicationRead]:
-    return await application_service.get_applications(db)
+# @router.get("/", response_model=list[ApplicationRead])
+# async def list_applications(db: AsyncSession = Depends(get_db)) -> list[ApplicationRead]:
+#     return await application_service.get_applications(db)
 
 @router.patch("/{application_id}",response_model=ApplicationRead)
-async def update_application(application_id,update_data: ApplicationUpdate, db:AsyncSession = Depends(get_db)) -> ApplicationRead:
+async def update_application(application_id: int,update_data: ApplicationUpdate,current_user: User = Depends(get_current_user), db:AsyncSession = Depends(get_db)) -> ApplicationRead:
     application = await application_service.get_application_by_id(db,application_id)
     if application is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Application not found")
+
+    if application.job.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Only the job owner can change the status")
     return await application_service.update_application_status(db,application,update_data.status)
 
 @router.delete("/{application_id}",status_code=status.HTTP_204_NO_CONTENT)
-async def delete_application(application_id: int, db: AsyncSession =Depends(get_db)) -> None:
+async def withdraw_application(application_id: int,current_user: User = Depends(get_current_user), db: AsyncSession =Depends(get_db)) -> None:
     application = await application_service.get_application_by_id(db,application_id)
     if application is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Application Not Found")
+
+    if application.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You can only withdraw your own Application")
     await application_service.delete_application(db,application)
