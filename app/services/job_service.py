@@ -1,6 +1,7 @@
 
 # from sqlalchemy.orm import Session
 from sqlalchemy import select,func
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.job import Job
 from app.schemas.job import JobCreate
@@ -26,7 +27,7 @@ async def get_job_by_id(db: AsyncSession,job_id: int) -> Job | None:
 
 
 async def get_jobs(db: AsyncSession)-> list[Job]:
-    result =  await db.execute(select(Job))
+    result =  await db.execute(select(Job).where(Job.is_open.is_(True)))
     return list(result.scalars().all())
 
 

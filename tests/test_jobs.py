@@ -93,3 +93,18 @@ async def test_owner_can_delete_job(client: AsyncClient)->None:
     assert delete_response.status_code == 204
 
 
+async def test_closed_jobs_are_hidden_from_listing(client: AsyncClient) -> None:
+    token = await register_and_login(client, "employer@example.com", "testpass123", "employer")
+    headers = {"Authorization": f"Bearer {token}"}
+    job = await client.post(
+        "/api/v1/jobs/",
+        json={"title": "Dev", "company": "TestCo", "location": "Remote", "description": "Build"},
+        headers=headers,
+    )
+    job_id = job.json()["id"]
+
+    assert len((await client.get("/api/v1/jobs/")).json()) == 1
+
+    await client.patch(f"/api/v1/jobs/{job_id}", json={"is_open": False}, headers=headers)
+
+    assert (await client.get("/api/v1/jobs/")).json() == []

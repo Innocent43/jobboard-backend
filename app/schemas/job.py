@@ -16,6 +16,7 @@ class JobRead(JobBase):
     id: int
     is_open: bool
     created_at: datetime
+    owner_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
