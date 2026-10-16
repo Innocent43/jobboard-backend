@@ -41,13 +41,13 @@ async def update_me(update_data: UserUpdate,current_user: User = Depends(get_cur
 async def delete_me(current_user: User = Depends(get_current_user),db:AsyncSession=Depends(get_db),)-> None:
     await user_service.delete_user(db,current_user)
 
-@router.get("/{user_id}",response_model=UserRead)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db))-> UserRead:
-    user = await user_service.get_user_by_id(db,user_id)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return user
+# @router.get("/{user_id}",response_model=UserRead)
+# async def get_user(user_id: int, db: AsyncSession = Depends(get_db))-> UserRead:
+#     user = await user_service.get_user_by_id(db,user_id)
+#     if user is None:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return user
 
-@router.get("/",response_model=list[UserRead])
-async def list_users(db: AsyncSession = Depends(get_db)) -> list[UserRead]:
-    return await user_service.get_users(db)
+# @router.get("/",response_model=list[UserRead])
+# async def list_users(db: AsyncSession = Depends(get_db)) -> list[UserRead]:
+#     return await user_service.get_users(db)

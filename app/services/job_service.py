@@ -27,7 +27,7 @@ async def get_job_by_id(db: AsyncSession,job_id: int) -> Job | None:
 
 
 async def get_jobs(db: AsyncSession)-> list[Job]:
-    result =  await db.execute(select(Job).where(Job.is_open.is_(True)))
+    result =  await db.execute(select(Job).where(Job.is_open.is_(True)).order_by(Job.created_at.desc()))
     return list(result.scalars().all())
 
 
@@ -54,3 +54,8 @@ async def get_jobs_by_owner_with_counts(db: AsyncSession, owner_id: int)->list[t
 
     result = await db.execute(stmt)
     return [(job, count) for job, count in result.all()]
+
+
+async def get_all_jobs(db: AsyncSession, skip: int = 0, limit: int = 50)->list[Job]:
+    result = await db.execute(select(Job).order_by(Job.created_at.desc()).offset(skip).limit(limit))
+    return list(result.scalars().all())

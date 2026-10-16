@@ -44,3 +44,18 @@ async def test_register_duplicate_email_fails(client: AsyncClient)-> None:
 
     assert response.status_code == 400
     assert "already registered" in response.json()["detail"]
+
+
+
+async def test_cannot_register_as_admin(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/users/",
+        json={
+            "name": "Sneaky",
+            "email": "sneaky@example.com",
+            "password": "testpass123",
+            "role": "admin",
+        },
+    )
+
+    assert response.status_code == 422

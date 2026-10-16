@@ -2,13 +2,14 @@ from fastapi import FastAPI
 from app.routers import users
 from app.routers import jobs
 from app.routers import applications
-from app.routers import auth
+from app.routers import auth,admin
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
 from app.core.logging import setup_logging
 from app.routers import message
+
 import time
 from fastapi import Request
 import logging
@@ -47,8 +48,8 @@ app.include_router(users.router,prefix=API_V1_PREFIX)
 app.include_router(jobs.router,prefix=API_V1_PREFIX)
 app.include_router(applications.router,prefix=API_V1_PREFIX)
 app.include_router(auth.router,prefix=API_V1_PREFIX)
-app.include_router(message.router,prefix=API_V1_PREFIX)
 
+app.include_router(admin.router,prefix=API_V1_PREFIX)
 @app.get("/")
 def get_root()-> dict[str,str]:
     return {"message": "DevBoard API is running"}

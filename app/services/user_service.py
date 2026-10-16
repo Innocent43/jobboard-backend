@@ -6,6 +6,7 @@ from app.core.security import hash_password
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.core.security import verify_password
+from app.models.user import UserRole
 
 
 async def create_user(db: AsyncSession,user_data: UserCreate)-> User:
@@ -18,7 +19,7 @@ async def create_user(db: AsyncSession,user_data: UserCreate)-> User:
         name = user_data.name,
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
-        role=user_data.role,
+        role=UserRole(user_data.role),
     )
 
     db.add(new_user)
@@ -34,8 +35,8 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def get_users(db: AsyncSession) -> list[User]:
-    result = await db.execute(select(User))
+async def get_users(db: AsyncSession, skip: int = 0, limit: int = 50) -> list[User]:
+    result = await db.execute(select(User).order_by(User.created_at.desc()).offset(skip).limit(limit))
     return list(result.scalars().all())
 
 

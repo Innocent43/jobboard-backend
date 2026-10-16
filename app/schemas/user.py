@@ -1,14 +1,17 @@
 from datetime import datetime
 from pydantic import BaseModel,EmailStr,ConfigDict,Field
 from app.models.user import UserRole
+from typing import Literal
+
+PublicRole =Literal["employer", "job_seeker"]
 
 class UserBase(BaseModel):
     name: str
     email: EmailStr
 
 class UserCreate(UserBase):
-    password: str = Field(min_length=6)
-    role: UserRole = UserRole.JOB_SEEKER
+    password: str = Field(min_length=8)
+    role: PublicRole = "job_seeker"
 
 class UserRead(UserBase):
     id: int
